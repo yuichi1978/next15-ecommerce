@@ -1,13 +1,40 @@
 import { hashPassword } from "@/lib/auth";
-import { PrismaClient, Product, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log("🧹 Cleaning up database...");
+  
+  // 外部キー制約の順序に従って削除
+  // 1. 注文関連テーブル
+  await prisma.orderItem.deleteMany();
+  console.log("✅ OrderItems deleted");
+  
+  await prisma.order.deleteMany();
+  console.log("✅ Orders deleted");
+  
+  // 2. カート関連テーブル
+  await prisma.cartItem.deleteMany();
+  console.log("✅ CartItems deleted");
+  
+  await prisma.cart.deleteMany();
+  console.log("✅ Carts deleted");
+  
+  // 3. 商品とカテゴリ
   await prisma.product.deleteMany();
+  console.log("✅ Products deleted");
+  
   await prisma.category.deleteMany();
+  console.log("✅ Categories deleted");
+  
+  // 4. ユーザー（最後に削除）
   await prisma.user.deleteMany();
+  console.log("✅ Users deleted");
 
+  console.log("🌱 Starting to seed database...");
+
+  // カテゴリの作成
   const electronics = await prisma.category.create({
     data: {
       name: "Electronics",
@@ -29,9 +56,11 @@ async function main() {
     },
   });
 
-  const products: Product[] = [
+  console.log("✅ Categories created");
+
+  // 商品の作成（idを削除してPrismaに自動生成させる）
+  const productsData = [
     {
-      id: "1",
       name: "Wireless Headphones",
       description:
         "Premium noise-cancelling wireless headphones with long battery life.",
@@ -42,7 +71,6 @@ async function main() {
       inventory: 15,
     },
     {
-      id: "2",
       name: "Smart Watch",
       description:
         "Fitness tracker with heart rate monitoring and sleep analysis.",
@@ -53,7 +81,6 @@ async function main() {
       inventory: 10,
     },
     {
-      id: "3",
       name: "Running Shoes",
       description: "Lightweight running shoes with responsive cushioning.",
       price: 89.99,
@@ -63,7 +90,6 @@ async function main() {
       inventory: 3,
     },
     {
-      id: "4",
       name: "Ceramic Mug",
       description: "Handcrafted ceramic mug with minimalist design.",
       price: 24.99,
@@ -73,7 +99,6 @@ async function main() {
       inventory: 0,
     },
     {
-      id: "5",
       name: "Leather Backpack",
       description: "Durable leather backpack with multiple compartments.",
       price: 79.99,
@@ -84,34 +109,31 @@ async function main() {
     },
   ];
 
-  for (const product of products) {
+  for (const product of productsData) {
     await prisma.product.create({
       data: product,
     });
   }
 
-  const users: User[] = [
+  console.log("✅ Products created");
+
+  // ユーザーの作成（idを削除してPrismaに自動生成させる）
+  const usersData = [
     {
-      id: "1",
       email: "admin@example.com",
       password: "password123",
       name: "Admin User",
-      role: "admin",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      role: "admin" as const,
     },
     {
-      id: "2",
       email: "user@example.com",
       password: "password456",
       name: "Regular User",
-      role: "user",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      role: "user" as const,
     },
   ];
 
-  for (const user of users) {
+  for (const user of usersData) {
     const hashedPassword = await hashPassword(user.password);
     await prisma.user.create({
       data: {
@@ -121,7 +143,8 @@ async function main() {
     });
   }
 
-  console.log("Users created");
+  console.log("✅ Users created");
+  console.log("🎉 Database seeding completed successfully!");
 }
 
 main()
@@ -130,7 +153,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error("❌ Error during seeding:", e);
     await prisma.$disconnect();
     process.exit(1);
   });
