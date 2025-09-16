@@ -9,8 +9,7 @@
 -- AlterTable
 ALTER TABLE "public"."Product" ADD COLUMN     "image" TEXT,
 ADD COLUMN     "price" DOUBLE PRECISION NOT NULL,
-ADD COLUMN     "slug" TEXT NOT NULL,
-ALTER COLUMN "description" DROP NOT NULL;
+ADD COLUMN     "slug" TEXT NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Product_slug_key" ON "public"."Product"("slug");
